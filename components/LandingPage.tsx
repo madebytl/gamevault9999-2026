@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Sparkles, Lock, ShieldAlert, Coins, Users, Clock, ShieldCheck, Loader2, UserPlus, LogIn, Globe, ChevronRight, Terminal, Gift, Info, Bell, Trophy, Star, TrendingUp, Zap, Cpu, Wifi, Radio, DollarSign, Wallet, CreditCard, Ticket } from 'lucide-react';
+import { Play, Sparkles, Lock, ShieldAlert, Coins, Users, Clock, ShieldCheck, Loader2, UserPlus, LogIn, Globe, ChevronRight, Terminal, Gift, Info, Bell, Trophy, Star, TrendingUp, Zap, Cpu, Wifi, Radio, DollarSign, Wallet, CreditCard, Ticket, Check, XCircle, AlertCircle } from 'lucide-react';
 
 interface LandingPageProps {
   onLogin: (username: string) => void;
@@ -45,10 +45,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [coupon, setCoupon] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash App');
   const [paymentHandle, setPaymentHandle] = useState('');
+
+  // Coupon Validation State
+  const [couponStatus, setCouponStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [couponFeedback, setCouponFeedback] = useState('');
+  const couponTimeoutRef = useRef<any>(null);
   
-  // Game Stats Simulation - Dynamic Init
+  // Game Stats Simulation - Dynamic Init (Bonus between $5 and $170)
   const [slotsLeft, setSlotsLeft] = useState(() => Math.floor(Math.random() * 15) + 3);
-  const [bonusCount, setBonusCount] = useState(50000);
+  const [bonusCount, setBonusCount] = useState(() => Math.floor(Math.random() * (170 - 5 + 1)) + 5);
   const [playersOnline, setPlayersOnline] = useState(1429);
   
   // Logic State
@@ -84,12 +89,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             setTopTicker(next);
             setShowTicker(true);
             
-            // Dynamic Bonus Calculation based on "Live Market"
+            // Dynamic Bonus Calculation based on "Live Market" - Keep between 5 and 170
             setBonusCount(prev => {
-                const volatility = Math.floor(Math.random() * 1500) - 500; 
+                const volatility = Math.floor(Math.random() * 5) - 2; 
                 let nextVal = prev + volatility;
-                if (nextVal > 58000) nextVal = 50000;
-                if (nextVal < 42000) nextVal = 45000;
+                if (nextVal > 170) nextVal = 170;
+                if (nextVal < 5) nextVal = 5;
                 return nextVal;
             });
 
@@ -222,7 +227,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           if (i === 2) setProcessLog(p => [...p, `> PINGING ${paymentMethod.toUpperCase()} SECURE SERVER...`]);
           
           if (i === 3) {
-            if (coupon) setProcessLog(p => [...p, `> REDEEMING PROMO: ${coupon.toUpperCase()}...`]);
+            if (couponStatus === 'valid') setProcessLog(p => [...p, `> APPLYING PROMO: ${coupon.toUpperCase()} (VERIFIED)...`]);
             else setProcessLog(p => [...p, "> CHECKING BONUS ELIGIBILITY..."]);
           }
           
@@ -321,6 +326,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       playSound('click');
   }
 
+  const handleCouponChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    setCoupon(val);
+    
+    if (couponTimeoutRef.current) clearTimeout(couponTimeoutRef.current);
+    
+    if (val.length === 0) {
+        setCouponStatus('idle');
+        setCouponFeedback('');
+        return;
+    }
+
+    setCouponStatus('checking');
+    
+    couponTimeoutRef.current = setTimeout(() => {
+        // Mock Validation Logic: Codes starting with specific prefixes are valid
+        const validPrefixes = ['WELCOME', 'BONUS', 'GAME', 'VIP', 'KIRIN', 'VAULT', 'TEST'];
+        const isLengthValid = val.length >= 4 && val.length <= 15;
+        const hasValidPrefix = validPrefixes.some(prefix => val.startsWith(prefix));
+        
+        if (isLengthValid && hasValidPrefix) {
+            setCouponStatus('valid');
+            setCouponFeedback('PROMO ACTIVE: EXTRA REWARDS UNLOCKED');
+            playSound('coin');
+        } else {
+            setCouponStatus('invalid');
+            setCouponFeedback('ERROR: CODE NOT RECOGNIZED');
+            playSound('alert');
+        }
+    }, 800);
+  };
+
   return (
     <div className="min-h-screen bg-[#020408] flex flex-col items-center justify-center relative overflow-hidden font-sans p-4">
         {/* Futuristic Background */}
@@ -389,10 +426,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                         <div className="flex items-center gap-3">
                             <Coins className="w-8 h-8 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]" />
                             <div className="text-3xl font-black text-white tabular-nums tracking-tight">
-                                {bonusCount.toLocaleString()}
+                                ${bonusCount.toLocaleString()}
                             </div>
                         </div>
-                        <div className="text-[10px] text-gray-500 font-mono mt-1">AVAILABLE FOR CLAIM</div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-1">CASH REWARD</div>
                     </div>
                 </div>
             )}
@@ -450,9 +487,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                     <div className="text-center animate-in zoom-in duration-500">
                                         <div className="text-xs font-bold text-vault-purple uppercase tracking-widest mb-4">Allocation Complete</div>
                                         <div className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 tabular-nums mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                                            {allocatedPrize.toLocaleString()}
+                                            ${allocatedPrize.toLocaleString()}
                                         </div>
-                                        <div className="text-yellow-400 font-bold tracking-[0.5em] text-sm animate-pulse">CREDITS</div>
+                                        <div className="text-yellow-400 font-bold tracking-[0.5em] text-sm animate-pulse">CASH BONUS</div>
                                         
                                         <div className="mt-8 grid grid-cols-2 gap-2 w-full">
                                             <div className="bg-green-500/10 border border-green-500/30 p-2 rounded text-[10px] text-green-400 font-bold flex flex-col items-center gap-1">
@@ -560,19 +597,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                             </div>
                                         </div>
 
-                                        {/* Coupon Code */}
+                                        {/* Coupon Code - Enhanced Validation */}
                                         <div>
                                             <div className="relative group">
-                                                <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-green-400 transition-colors" />
+                                                <Ticket className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${couponStatus === 'valid' ? 'text-green-400' : couponStatus === 'invalid' ? 'text-red-500' : 'text-gray-500 group-focus-within:text-green-400'}`} />
                                                 <input 
                                                     type="text" 
                                                     value={coupon}
-                                                    onChange={(e) => setCoupon(e.target.value)}
+                                                    onChange={handleCouponChange}
                                                     onClick={handleInputClick}
-                                                    className="w-full bg-black/40 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white font-mono text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400 focus:outline-none transition-all placeholder:text-gray-700 group-hover:border-slate-500"
+                                                    className={`w-full bg-black/40 border rounded-lg pl-10 pr-10 py-3 text-white font-mono text-sm focus:outline-none focus:ring-1 transition-all placeholder:text-gray-700 group-hover:border-slate-500 ${
+                                                        couponStatus === 'valid' ? 'border-green-500/50 focus:border-green-400 focus:ring-green-400' :
+                                                        couponStatus === 'invalid' ? 'border-red-500/50 focus:border-red-400 focus:ring-red-400' :
+                                                        'border-slate-700 focus:border-green-400 focus:ring-green-400'
+                                                    }`}
                                                     placeholder="COUPON CODE (OPTIONAL)"
                                                 />
+                                                {/* Status Icons */}
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    {couponStatus === 'checking' && <Loader2 className="w-4 h-4 text-vault-purple animate-spin" />}
+                                                    {couponStatus === 'valid' && <Check className="w-4 h-4 text-green-400" />}
+                                                    {couponStatus === 'invalid' && <XCircle className="w-4 h-4 text-red-500" />}
+                                                </div>
                                             </div>
+                                            {/* Validation Feedback Message */}
+                                            {couponFeedback && (
+                                                <div className={`text-[9px] mt-1 ml-1 font-bold tracking-wider flex items-center gap-1 ${
+                                                    couponStatus === 'valid' ? 'text-green-400' : 'text-red-400'
+                                                }`}>
+                                                    {couponStatus === 'valid' ? <Check className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                                                    {couponFeedback}
+                                                </div>
+                                            )}
                                         </div>
                                     </>
                                 )}
