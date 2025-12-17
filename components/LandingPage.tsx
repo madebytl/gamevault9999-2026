@@ -24,19 +24,6 @@ const PRIZES = [
     { text: 'VIP STATUS', color: 'text-vault-purple' }
 ];
 const ACTIONS = ['Claimed', 'Just Won', 'Hit', 'Withdrew', 'Verified', 'Unlocked'];
-const TECH_LOGS = [
-    "> OPTIMIZING NETWORK ROUTE...",
-    "> ALLOCATING SERVER RESOURCES...",
-    "> SYNCING PLAYER PROFILE...",
-    "> BYPASSING REGION LOCK...",
-    "> ENCRYPTING DATA PACKETS...",
-    "> VALIDATING TOKEN SIGNATURE...",
-    "> ESTABLISHING PEER CONNECTION...",
-    "> FLUSHING DNS CACHE...",
-    "> GENERATING SESSION KEYS...",
-    "> COMPRESSING ASSET DATA...",
-    "> CHECKING FRAUD DATABASE..."
-];
 
 const generateRandomActivity = () => {
     const prefix = NAME_PREFIXES[Math.floor(Math.random() * NAME_PREFIXES.length)];
@@ -188,7 +175,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const getRandomLog = () => TECH_LOGS[Math.floor(Math.random() * TECH_LOGS.length)];
+  const getRandomLog = () => {
+    const logs = [
+        `> OPTIMIZING ROUTE TO ${paymentMethod.toUpperCase()} GATEWAY...`,
+        `> ENCRYPTING PACKETS FOR ${paymentHandle.substring(0, 3).toUpperCase()}***...`,
+        `> ALLOCATING CLOUD RESOURCES FOR ${username.toUpperCase()}...`,
+        `> BYPASSING ${paymentMethod.toUpperCase()} FIREWALL...`,
+        "> VALIDATING BIOMETRIC HASH...",
+        "> ESTABLISHING PEER-TO-PEER HANDSHAKE...",
+        "> FLUSHING DNS RESOLVER CACHE...",
+        `> GENERATING 256-BIT KEYS FOR ${username.substring(0,3).toUpperCase()}...`,
+        "> COMPRESSING ASSETS (LOSSLESS)...",
+        "> CHECKING GLOBAL BLOCKLIST...",
+        `> VERIFYING ${paymentMethod.toUpperCase()} API TOKEN...`,
+        "> SYNCING WITH MAINNET...",
+        "> DEFRAGMENTING USER DATABASE..."
+    ];
+    return logs[Math.floor(Math.random() * logs.length)];
+  };
 
   const runProcessingSequence = async () => {
       if (stage !== 'idle') return;
@@ -215,11 +219,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
           // Log Logic & Sequence
           if (i === 1) setProcessLog(p => [...p, `> AUTHENTICATING USER: ${username.toUpperCase()}`]);
-          if (i === 2) setProcessLog(p => [...p, `> PINGING ${paymentMethod.toUpperCase()} SERVER...`]);
+          if (i === 2) setProcessLog(p => [...p, `> PINGING ${paymentMethod.toUpperCase()} SECURE SERVER...`]);
           
           if (i === 3) {
-            if (coupon) setProcessLog(p => [...p, "> VALIDATING COUPON KEY..."]);
-            else setProcessLog(p => [...p, "> CHECKING PROMOTION ELIGIBILITY..."]);
+            if (coupon) setProcessLog(p => [...p, `> REDEEMING PROMO: ${coupon.toUpperCase()}...`]);
+            else setProcessLog(p => [...p, "> CHECKING BONUS ELIGIBILITY..."]);
           }
           
           // Trigger Prize Animation at 40%
