@@ -57,6 +57,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [bonusCount, setBonusCount] = useState(() => Math.floor(Math.random() * (170 - 5 + 1)) + 5);
   const [playersOnline, setPlayersOnline] = useState(1429);
   
+  // Offer Timer State
+  const [timeLeft, setTimeLeft] = useState({ h: 23, m: 59, s: 59 });
+  
   // Logic State
   const [stage, setStage] = useState<Stage>('idle');
   const [processLog, setProcessLog] = useState<string[]>([]);
@@ -103,9 +106,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         }, 500);
     }, 3500);
 
+    // Persistent Offer Timer Logic
+    const STORAGE_KEY = 'game_vault_offer_expiry';
+    let expiryStr = localStorage.getItem(STORAGE_KEY);
+    let expiry = expiryStr ? parseInt(expiryStr) : 0;
+    
+    const now = Date.now();
+    if (!expiry || expiry < now) {
+        expiry = now + 24 * 60 * 60 * 1000;
+        localStorage.setItem(STORAGE_KEY, expiry.toString());
+    }
+
+    const timerInterval = setInterval(() => {
+        const currentTime = Date.now();
+        let remaining = expiry - currentTime;
+        
+        if (remaining <= 0) {
+            // Reset for another 24h
+            expiry = Date.now() + 24 * 60 * 60 * 1000;
+            localStorage.setItem(STORAGE_KEY, expiry.toString());
+            remaining = 24 * 60 * 60 * 1000;
+        }
+
+        const h = Math.floor(remaining / (1000 * 60 * 60));
+        const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((remaining % (1000 * 60)) / 1000);
+        setTimeLeft({ h, m, s });
+    }, 1000);
+
     return () => {
         clearInterval(timer);
         clearInterval(activityTimer);
+        clearInterval(timerInterval);
     };
   }, []);
 
@@ -452,7 +484,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
             {/* Bonus Orb */}
             {stage === 'idle' && (
-                <div className="relative mb-10 group cursor-pointer hover:scale-105 transition duration-500">
+                <div className="relative mb-4 group cursor-pointer hover:scale-105 transition duration-500">
                     <div className="absolute inset-0 bg-vault-pink/20 rounded-full blur-xl animate-pulse"></div>
                     <div className="relative bg-gradient-to-b from-slate-800 to-slate-950 border-2 border-vault-purple/50 rounded-2xl px-8 py-4 shadow-[0_0_30px_rgba(139,92,246,0.15)] flex flex-col items-center">
                         <div className="absolute -top-3 bg-slate-900 border border-vault-purple px-3 py-0.5 rounded-full text-[10px] font-bold text-vault-purple uppercase tracking-wider">
@@ -465,6 +497,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                             </div>
                         </div>
                         <div className="text-[10px] text-gray-500 font-mono mt-1">CASH REWARD</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Limited Time Offer Timer */}
+            {stage === 'idle' && (
+                <div className="mb-8 animate-in fade-in slide-in-from-top-2 duration-700">
+                    <div className="bg-red-900/10 border border-red-500/30 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-[0_0_15px_rgba(239,68,68,0.15)] flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                        <span className="text-[10px] font-black text-red-400 tracking-[0.2em] uppercase">Offer expires:</span>
+                        <span className="text-sm font-mono font-bold text-white tabular-nums shadow-red-500/20 drop-shadow-sm">
+                            {String(timeLeft.h).padStart(2, '0')}:{String(timeLeft.m).padStart(2, '0')}:{String(timeLeft.s).padStart(2, '0')}
+                        </span>
                     </div>
                 </div>
             )}
