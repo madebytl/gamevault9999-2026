@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Sparkles, Lock, ShieldAlert, Coins, Users, Clock, ShieldCheck, Loader2, UserPlus, LogIn, Globe, ChevronRight, Terminal, Gift, Info, Bell, Trophy, Star, TrendingUp, Zap, Cpu, Wifi, Radio, DollarSign, Wallet, CreditCard, Ticket, Check, XCircle, AlertCircle } from 'lucide-react';
 
@@ -60,6 +61,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [stage, setStage] = useState<Stage>('idle');
   const [processLog, setProcessLog] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
+  const [showToast, setShowToast] = useState(false);
   
   // Reward Animation State
   const [allocatedPrize, setAllocatedPrize] = useState(0);
@@ -117,7 +119,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
     }
   };
 
-  const playSound = (type: 'tick' | 'coin' | 'alert' | 'count' | 'click' | 'success') => {
+  const playSound = (type: 'tick' | 'coin' | 'alert' | 'count' | 'click' | 'success' | 'catch') => {
       if (!audioCtxRef.current) return;
       const ctx = audioCtxRef.current;
       const t = ctx.currentTime;
@@ -175,6 +177,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           gain.gain.linearRampToValueAtTime(0, t + 0.6);
           osc.start(t);
           osc.stop(t + 0.6);
+      } else if (type === 'catch') {
+          // Digital chime for processing steps
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(500, t);
+          osc.frequency.linearRampToValueAtTime(1000, t + 0.08); // Quick sweep up
+          gain.gain.setValueAtTime(0.08, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.start(t);
+          osc.stop(t + 0.1);
       }
   };
 
@@ -210,7 +221,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       setShowPrizeUI(false);
       setAllocatedPrize(0);
       setProcessLog(["> INITIALIZING SECURE UPLINK..."]);
-      playSound('tick');
+      playSound('catch');
 
       const totalSteps = 10;
       const stepDuration = 700; 
@@ -220,7 +231,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           
           const currentPct = i * 10;
           setProgress(currentPct);
-          playSound('tick');
+          playSound('catch');
 
           // Log Logic & Sequence
           if (i === 1) setProcessLog(p => [...p, `> AUTHENTICATING USER: ${username.toUpperCase()}`]);
@@ -282,6 +293,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
   const triggerLocker = () => {
       setStage('locked');
+      setShowToast(true);
       if (typeof (window as any)._JF === 'function') {
           (window as any)._JF();
       } else {
@@ -312,6 +324,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
   const handleVerifyCheck = () => {
       setStage('verified');
+      setShowToast(false);
       initAudio();
       playSound('coin');
       setProcessLog(prev => [...prev, "> IDENTITY CONFIRMED", "> WELCOME TO THE VAULT"]);
@@ -365,6 +378,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         {/* Animated Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.05)_1px,transparent_1px)] bg-[size:50px_50px] [transform:perspective(1000px)_rotateX(60deg)] origin-top opacity-50 pointer-events-none animate-pulse-fast"></div>
         
+        {/* Nice Pending Verification Toast */}
+        {showToast && (
+            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm animate-in slide-in-from-bottom-20 duration-500">
+                <div className="bg-slate-900/90 backdrop-blur-2xl border-2 border-vault-purple/50 rounded-2xl p-4 shadow-[0_0_40px_rgba(139,92,246,0.4)] flex items-center gap-4">
+                    <div className="relative">
+                        <div className="w-10 h-10 rounded-full border-2 border-vault-purple border-t-transparent animate-spin"></div>
+                        <ShieldCheck className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 text-vault-purple" />
+                    </div>
+                    <div className="flex-1">
+                        <div className="text-white font-black text-sm uppercase tracking-widest leading-tight">Verification Pending</div>
+                        <div className="text-[10px] text-indigo-300 font-mono animate-pulse uppercase mt-0.5">Syncing with Mainframe...</div>
+                    </div>
+                    <button 
+                        onClick={() => setShowToast(false)} 
+                        className="text-gray-500 hover:text-white transition-colors"
+                    >
+                        <XCircle className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+        )}
+
         {/* Top HUD Bar */}
         <div className="fixed top-0 left-0 right-0 p-3 z-50 flex justify-between items-start pointer-events-none">
              <div className="flex flex-col gap-1">
@@ -381,7 +416,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
              {/* Urgency Alert */}
              <div className="flex items-center gap-2 bg-red-900/20 border border-red-500/50 backdrop-blur px-4 py-2 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                 <ShieldAlert className="w-4 h-4 text-red-500" />
-                <span className="text-red-200 text-xs font-bold tracking-wider uppercase">High Traffic: {slotsLeft} Slots</span>
+                <span className="text-red-200 text-xs font-bold tracking-wider uppercase">REMAINING SLOTS: {slotsLeft}</span>
              </div>
         </div>
 
